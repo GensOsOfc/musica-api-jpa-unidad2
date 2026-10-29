@@ -1,0 +1,20 @@
+# Compilación
+target/
+
+# Base de datos H2 (archivo local, no se sube al repositorio)
+data/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
