@@ -10,12 +10,7 @@ import com.musica.api.modelo.Cancion;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Prueba de integración del repositorio.
- *
- * {@code @DataJpaTest} levanta una base H2 EN MEMORIA (aislada, distinta
- * de la del archivo) y verifica el mapeo de la entidad y las consultas.
- */
+/** @DataJpaTest usa una H2 en memoria, aislada del archivo. */
 @DataJpaTest
 class CancionRepositoryTest {
 

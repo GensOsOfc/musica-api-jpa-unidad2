@@ -22,12 +22,8 @@ import com.musica.api.modelo.Cancion;
 import com.musica.api.servicio.CatalogoMusical;
 
 /**
- * Controlador REST del recurso "canciones".
- *
- * Todas las rutas parten de /api/canciones. Cada método devuelve un
- * {@link ResponseEntity} para controlar de forma explícita el código de
- * estado HTTP: 200 para lecturas, 201 al crear, 204 al eliminar, 400 para
- * peticiones inválidas y 404 cuando el recurso no existe.
+ * Endpoints REST de /api/canciones. Cada método devuelve ResponseEntity
+ * para controlar el código HTTP (200/201/204/400/404).
  */
 @RestController
 @RequestMapping("/api/canciones")
@@ -39,27 +35,16 @@ public class CancionController {
         this.catalogo = catalogo;
     }
 
-    /**
-     * GET /api/canciones → 200 OK con todas las canciones.
-     */
     @GetMapping
     public ResponseEntity<List<Cancion>> listar() {
         return ResponseEntity.ok(catalogo.listarTodas());
     }
 
-    /**
-     * GET /api/canciones/generos → 200 OK con los géneros disponibles.
-     */
     @GetMapping("/generos")
     public ResponseEntity<List<String>> listarGeneros() {
         return ResponseEntity.ok(catalogo.listarGeneros());
     }
 
-    /**
-     * GET /api/canciones/buscar?genero=rock
-     * Consulta personalizada: filtra por género (RequestParam).
-     * → 200 OK con el resultado, o 400 BAD REQUEST si falta el parámetro.
-     */
     @GetMapping("/buscar")
     public ResponseEntity<?> buscarPorGenero(@RequestParam(required = false) String genero) {
         if (genero == null || genero.isBlank()) {
@@ -69,11 +54,6 @@ public class CancionController {
         return ResponseEntity.ok(catalogo.buscarPorGenero(genero));
     }
 
-    /**
-     * GET /api/canciones/{id}
-     * Busca una canción por su id (PathVariable).
-     * → 200 OK si existe, 404 NOT FOUND si no.
-     */
     @GetMapping("/{id}")
     public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
         Optional<Cancion> cancion = catalogo.buscarPorId(id);
@@ -84,12 +64,6 @@ public class CancionController {
                 .body(Map.of("error", "No existe una canción con id " + id));
     }
 
-    /**
-     * POST /api/canciones
-     * Crea una canción (JSON en el cuerpo, deserializado a CancionDTO).
-     * → 201 CREATED con la canción persistida y cabecera Location,
-     *   o 400 BAD REQUEST si el JSON es inválido.
-     */
     @PostMapping
     public ResponseEntity<?> crear(@RequestBody CancionDTO dto) {
         String error = catalogo.validar(dto);
@@ -101,13 +75,6 @@ public class CancionController {
         return ResponseEntity.created(location).body(creada);
     }
 
-    /**
-     * PUT /api/canciones/{id}
-     * Actualiza una canción existente.
-     * → 200 OK con la canción actualizada,
-     *   o 400 BAD REQUEST si el JSON es inválido,
-     *   o 404 NOT FOUND si no existe una canción con ese id.
-     */
     @PutMapping("/{id}")
     public ResponseEntity<?> actualizar(@PathVariable Long id, @RequestBody CancionDTO dto) {
         String error = catalogo.validar(dto);
@@ -122,12 +89,6 @@ public class CancionController {
                 .body(Map.of("error", "No existe una canción con id " + id));
     }
 
-    /**
-     * DELETE /api/canciones/{id}
-     * Elimina una canción por su id.
-     * → 204 NO CONTENT sin cuerpo si se eliminó,
-     *   o 404 NOT FOUND si no existía.
-     */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> eliminar(@PathVariable Long id) {
         boolean eliminada = catalogo.eliminar(id);

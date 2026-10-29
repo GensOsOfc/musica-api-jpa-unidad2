@@ -4,11 +4,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
- * Punto de entrada de la aplicación.
- *
- * {@code @SpringBootApplication} habilita el escaneo de componentes,
- * la configuración automática (incluida la de Spring Data JPA y el
- * datasource de H2) y el arranque del Tomcat embebido.
+ * Punto de entrada. @SpringBootApplication habilita el escaneo de componentes
+ * y la configuración automática (web, JPA y datasource H2).
  */
 @SpringBootApplication
 public class MusicaApiJpaApplication {

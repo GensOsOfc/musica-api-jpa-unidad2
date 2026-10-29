@@ -7,12 +7,8 @@ import com.musica.api.modelo.Cancion;
 import com.musica.api.repositorio.CancionRepository;
 
 /**
- * Carga datos de ejemplo la primera vez que se ejecuta la aplicación.
- *
- * Como la base es un archivo que persiste entre reinicios, este método
- * solo inserta las canciones de ejemplo cuando la tabla está vacía.
- * Así, al reiniciar, los datos creados anteriormente se conservan y no
- * se duplican los de ejemplo.
+ * Carga las canciones de ejemplo solo si la tabla está vacía, así no se
+ * duplican al reiniciar (la base persiste en archivo).
  */
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -26,7 +22,7 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         if (repositorio.count() > 0) {
-            return; // Ya hay datos: no volver a insertar.
+            return;
         }
         repositorio.save(new Cancion("La Camisa Negra", "Juanes", "Pop rock", 2004, 214));
         repositorio.save(new Cancion("Oye Mi Amor", "Maná", "Rock en español", 1992, 273));

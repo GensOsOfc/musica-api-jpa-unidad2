@@ -12,46 +12,33 @@ import com.musica.api.modelo.Cancion;
 import com.musica.api.repositorio.CancionRepository;
 
 /**
- * Lógica de negocio del catálogo musical.
- *
- * A diferencia de la Actividad #1 (que guardaba todo en una lista en
- * memoria), ahora el servicio delega la persistencia en un
- * {@link CancionRepository} de Spring Data JPA. El repositorio se encarga
- * de traducir cada operación a SQL y de guardar/leer las filas en H2.
+ * Lógica de negocio. Delega la persistencia en CancionRepository.
  */
 @Service
 public class CatalogoMusical {
 
     private final CancionRepository repositorio;
 
-    // Inyección por constructor: Spring entrega la instancia del repositorio.
     public CatalogoMusical(CancionRepository repositorio) {
         this.repositorio = repositorio;
     }
 
-    /** Devuelve todas las canciones, ordenadas por título. */
     public List<Cancion> listarTodas() {
         return repositorio.findAll(Sort.by("titulo"));
     }
 
-    /** Busca una canción por su id (clave primaria). */
     public Optional<Cancion> buscarPorId(Long id) {
         return repositorio.findById(id);
     }
 
-    /** Filtra canciones por género usando la consulta personalizada del repositorio. */
     public List<Cancion> buscarPorGenero(String genero) {
         return repositorio.buscarPorGenero(genero.trim());
     }
 
-    /** Lista los géneros disponibles, sin repetidos y en orden alfabético. */
     public List<String> listarGeneros() {
         return repositorio.listarGeneros();
     }
 
-    /**
-     * Crea y persiste una canción nueva. El id lo genera la base de datos.
-     */
     public Cancion crear(CancionDTO dto) {
         Cancion cancion = new Cancion(
                 dto.titulo().trim(),
@@ -63,12 +50,7 @@ public class CatalogoMusical {
         return repositorio.save(cancion);
     }
 
-    /**
-     * Actualiza una canción existente.
-     *
-     * @return un {@code Optional} con la canción actualizada si existía,
-     *         o {@code Optional.empty()} si no había canción con ese id.
-     */
+    /** @return empty si no existe una canción con ese id. */
     public Optional<Cancion> actualizar(Long id, CancionDTO dto) {
         Optional<Cancion> existente = repositorio.findById(id);
         if (existente.isEmpty()) {
@@ -80,17 +62,11 @@ public class CatalogoMusical {
         cancion.setGenero(dto.genero().trim());
         cancion.setAnio(dto.anio());
         cancion.setDuracionSegundos(dto.duracionSegundos());
-        // La entidad ya está "gestionada" por JPA: al terminar la transacción,
-        // Hibernate detecta los cambios y ejecuta el UPDATE automáticamente.
+        // Entidad gestionada: Hibernate ejecuta el UPDATE al cerrar la transacción.
         return Optional.of(repositorio.save(cancion));
     }
 
-    /**
-     * Elimina una canción por su id.
-     *
-     * @return {@code true} si la canción existía y fue eliminada,
-     *         {@code false} si no había ninguna canción con ese id.
-     */
+    /** @return true si existía y fue eliminada, false si no. */
     public boolean eliminar(Long id) {
         if (!repositorio.existsById(id)) {
             return false;
@@ -99,12 +75,7 @@ public class CatalogoMusical {
         return true;
     }
 
-    /**
-     * Valida un DTO antes de crear o actualizar una canción.
-     *
-     * @return un mensaje de error si el DTO no es válido, o {@code null}
-     *         si todo está bien.
-     */
+    /** @return mensaje de error o null si el DTO es válido. */
     public String validar(CancionDTO dto) {
         if (dto.titulo() == null || dto.titulo().isBlank()) {
             return "El campo 'titulo' es obligatorio";

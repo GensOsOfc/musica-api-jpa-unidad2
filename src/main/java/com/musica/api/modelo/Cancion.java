@@ -8,17 +8,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 /**
- * Entidad persistente que representa una canción del catálogo.
- *
- * Las anotaciones JPA ({@code @Entity}, {@code @Table}, {@code @Id},
- * {@code @GeneratedValue}, {@code @Column}) le dicen a Hibernate cómo
- * mapear esta clase a una tabla de la base de datos.
- *
- * - {@code @Entity}: esta clase es una entidad gestionada por JPA.
- * - {@code @Table(name = "canciones")}: se persiste en la tabla "canciones".
- * - {@code @Id}: el campo {@code id} es la clave primaria.
- * - {@code @GeneratedValue(IDENTITY)}: el valor del id lo genera la base
- *   de datos de forma autoincremental al insertar cada fila.
+ * Entidad JPA mapeada a la tabla "canciones". El id lo genera la base de datos
+ * de forma autoincremental (IDENTITY).
  */
 @Entity
 @Table(name = "canciones")
@@ -43,17 +34,10 @@ public class Cancion {
     @Column(nullable = false)
     private int duracionSegundos;
 
-    /**
-     * Constructor sin argumentos. Es OBLIGATORIO para JPA/Hibernate:
-     * lo usa internamente al leer una fila de la base y crear la instancia.
-     */
+    // Obligatorio para JPA/Hibernate (lo usa al leer una fila de la base).
     public Cancion() {
     }
 
-    /**
-     * Constructor de conveniencia: crea una canción sin id (todavía no
-     * persistida). El id lo asigna la base de datos al hacer el save.
-     */
     public Cancion(String titulo, String artista, String genero,
                    int anio, int duracionSegundos) {
         this.titulo = titulo;
@@ -62,8 +46,6 @@ public class Cancion {
         this.anio = anio;
         this.duracionSegundos = duracionSegundos;
     }
-
-    // ---- Getters y setters: Jackson (JSON) y Hibernate los necesitan ----
 
     public Long getId() {
         return id;
