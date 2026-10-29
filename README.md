@@ -135,6 +135,14 @@ curl -X PUT http://localhost:8080/api/canciones/9 \
 curl -X DELETE http://localhost:8080/api/canciones/9
 ```
 
+## Probar con Bruno
+
+El repositorio incluye una colección lista para [Bruno](https://www.usebruno.com/) en la carpeta `bruno/`.
+
+1. Abrir Bruno → **Open Collection** → seleccionar la carpeta `bruno/` del proyecto.
+2. Con la aplicación corriendo (`mvn spring-boot:run`), ejecutar las peticiones en orden con el botón ▶.
+3. La petición **4 (Crear cancion)** guarda el id de la canción creada en la variable `nuevoId`; las peticiones 5, 6 y 7 usan ese id para consultar, actualizar y eliminar. Para agregar otra canción, edita el JSON de la petición 4 y vuelve a ejecutarla (cada ejecución crea una canción nueva con su propio id).
+
 ## Decisiones de diseño
 
 - **Entidad `Cancion` con JPA**: la clase está anotada con `@Entity` y `@Table`, con `@Id` + `@GeneratedValue(IDENTITY)` para que el id lo genere la base de datos. Hibernate crea y actualiza la tabla automáticamente (`ddl-auto=update`).

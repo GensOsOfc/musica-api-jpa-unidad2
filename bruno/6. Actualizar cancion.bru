@@ -1,0 +1,15 @@
+meta {
+  name: 6. Actualizar cancion
+  type: http
+  seq: 6
+}
+
+put {
+  url: http://localhost:8080/api/canciones/{{nuevoId}}
+  body: json
+  auth: none
+}
+
+body:json {
+  { "titulo": "Mi Canción (editada)", "artista": "Yo", "genero": "Pop rock", "anio": 2026, "duracionSegundos": 210 }
+}
