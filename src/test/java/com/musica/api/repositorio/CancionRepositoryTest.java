@@ -6,45 +6,55 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
+import com.musica.api.modelo.Artista;
 import com.musica.api.modelo.Cancion;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** @DataJpaTest usa una H2 en memoria, aislada del archivo. */
 @DataJpaTest
 class CancionRepositoryTest {
 
     @Autowired
-    private CancionRepository repositorio;
+    private CancionRepository cancionRepository;
+
+    @Autowired
+    private ArtistaRepository artistaRepository;
 
     @Test
-    void guardarYRecuperarUnaCancion() {
-        Cancion guardada = repositorio.save(
-                new Cancion("La Camisa Negra", "Juanes", "Pop rock", 2004, 214));
+    void guardarYRecuperarUnaCancionConArtista() {
+        Artista artista = artistaRepository.save(new Artista("Juanes"));
+        Cancion guardada = cancionRepository.save(
+                new Cancion("La Camisa Negra", artista, "Pop rock", 2004, 214));
 
         assertThat(guardada.getId()).isNotNull();
-        assertThat(repositorio.findById(guardada.getId())).isPresent();
-        assertThat(repositorio.count()).isEqualTo(1);
+        assertThat(cancionRepository.findById(guardada.getId())).isPresent();
+        assertThat(cancionRepository.findById(guardada.getId()).get().getArtista().getNombre())
+                .isEqualTo("Juanes");
+        assertThat(cancionRepository.count()).isEqualTo(1);
     }
 
     @Test
     void buscarPorGeneroIgnoraMayusculasYCoincidenciasParciales() {
-        repositorio.save(new Cancion("Oye Mi Amor", "Maná", "Rock en español", 1992, 273));
-        repositorio.save(new Cancion("Matador", "Los Fabulosos Cadillacs", "Rock en español", 1993, 312));
-        repositorio.save(new Cancion("La Rebelión", "Joe Arroyo", "Salsa", 1986, 287));
+        Artista man = artistaRepository.save(new Artista("Maná"));
+        Artista mat = artistaRepository.save(new Artista("Los Fabulosos Cadillacs"));
+        Artista joe = artistaRepository.save(new Artista("Joe Arroyo"));
+        cancionRepository.save(new Cancion("Oye Mi Amor", man, "Rock en español", 1992, 273));
+        cancionRepository.save(new Cancion("Matador", mat, "Rock en español", 1993, 312));
+        cancionRepository.save(new Cancion("La Rebelión", joe, "Salsa", 1986, 287));
 
-        List<Cancion> resultado = repositorio.buscarPorGenero("ROCK");
+        List<Cancion> resultado = cancionRepository.findByGeneroContainingIgnoreCase("ROCK");
 
         assertThat(resultado).hasSize(2);
     }
 
     @Test
     void listarGenerosSinRepetidosYOrdenados() {
-        repositorio.save(new Cancion("A", "X", "Salsa", 2000, 100));
-        repositorio.save(new Cancion("B", "X", "Pop rock", 2000, 100));
-        repositorio.save(new Cancion("C", "X", "Salsa", 2000, 100));
+        Artista a = artistaRepository.save(new Artista("X"));
+        cancionRepository.save(new Cancion("A", a, "Salsa", 2000, 100));
+        cancionRepository.save(new Cancion("B", a, "Pop rock", 2000, 100));
+        cancionRepository.save(new Cancion("C", a, "Salsa", 2000, 100));
 
-        List<String> generos = repositorio.listarGeneros();
+        List<String> generos = cancionRepository.listarGeneros();
 
         assertThat(generos).containsExactly("Pop rock", "Salsa");
     }

@@ -1,26 +1,20 @@
-# MusicaAPI JPA 🎵
+# MusicaAPI — catálogo musical con JPA, H2/MySQL y Deezer
 
-API REST de un **catálogo musical** con persistencia de datos, desarrollada con **Java**, **Spring Boot**, **Spring Data JPA** e **Hibernate**.
-
-Es la continuación de la Actividad Colaborativa #1 (`musica-api`), que guardaba las canciones en memoria. En esta versión, la misma API persiste las canciones en una base de datos (H2) mediante una entidad JPA y un repositorio `JpaRepository`, con operaciones **CRUD** completas (crear, consultar, actualizar y eliminar) y una **consulta personalizada**.
+API REST de un catálogo musical desarrollada con **Java**, **Spring Boot**, **Spring Data JPA** e **Hibernate**. Es la evolución de la Actividad Colaborativa #1: ahora las canciones y sus artistas se guardan en una base de datos (H2 o MySQL), y hay un endpoint que consulta la API pública de **Deezer** usando `RestClient`.
 
 ## Contexto seleccionado
 
-**Música.** La API gestiona canciones de un catálogo: cada canción tiene un título, un artista, un género, un año y una duración en segundos. Permite listar el catálogo, consultar una canción por su identificador, filtrar por género (consulta personalizada), ver los géneros disponibles, y crear, actualizar y eliminar canciones.
-
-## Integrantes
-
-- Azel (individual)
+**Música.** La API gestiona canciones (título, artista, género, año, duración) y artistas (nombre único). Permite las operaciones CRUD de canciones, consultas por género y por artista, y la búsqueda de una canción concreta en Deezer.
 
 ## Tecnologías utilizadas
 
 - **Java 22**
 - **Spring Boot 3.4** (Spring Web, Tomcat embebido)
-- **Spring Data JPA** (repositorios y `JpaRepository`)
-- **Hibernate** (proveedor JPA: mapea la entidad a la tabla y genera el SQL)
-- **H2** (base de datos embebida, en archivo)
-- **Maven** (gestión de dependencias y build)
-- **Jackson** (serialización/deserialización JSON)
+- **Spring Data JPA + Hibernate** (mapeo objeto-relacional)
+- **H2** (base embebida en memoria, perfil por defecto)
+- **MySQL** (perfil alternativo, base relacional)
+- **RestClient** (consumo de la API externa de Deezer)
+- **Maven** y **Jackson** (JSON)
 
 ## Estructura del proyecto
 
@@ -28,71 +22,91 @@ Es la continuación de la Actividad Colaborativa #1 (`musica-api`), que guardaba
 musica-api-jpa/
 ├── pom.xml
 ├── README.md
-└── src
-    ├── main
-    │   ├── java
-    │   │   └── com/musica/api
-    │   │       ├── MusicaApiJpaApplication.java   # punto de entrada
-    │   │       ├── config
-    │   │       │   └── DataInitializer.java       # datos de ejemplo (1ª ejecución)
-    │   │       ├── controlador
-    │   │       │   └── CancionController.java     # endpoints HTTP (ResponseEntity)
-    │   │       ├── dto
-    │   │       │   └── CancionDTO.java            # datos de entrada (record)
-    │   │       ├── modelo
-    │   │       │   └── Cancion.java               # entidad JPA (@Entity)
-    │   │       ├── repositorio
-    │   │       │   └── CancionRepository.java     # JpaRepository + consultas JPQL
-    │   │       └── servicio
-    │   │           └── CatalogoMusical.java       # lógica de negocio
-    │   └── resources
-    │       └── application.properties             # datasource H2 + JPA
-    └── test
-        └── java/com/musica/api
-            ├── MusicaApiJpaApplicationTests.java  # prueba de contexto
-            └── repositorio
-                └── CancionRepositoryTest.java     # pruebas del repositorio
+├── bruno/                                  # colección de peticiones
+└── src/main/
+    ├── resources/
+    │   ├── application.properties          # perfil activo (h2)
+    │   ├── application-h2.properties       # H2 en memoria + consola
+    │   └── application-mysql.properties    # MySQL local
+    └── java/com/musica/api/
+        ├── MusicaApiJpaApplication.java
+        ├── config/DatosIniciales.java      # carga 8 canciones si la tabla está vacía
+        ├── modelo/
+        │   ├── Artista.java                 # @Entity
+        │   └── Cancion.java                 # @Entity con @ManyToOne a Artista
+        ├── dto/
+        │   ├── CancionDTO.java              # record de entrada (igual que en la U1)
+        │   └── CancionDeezerDTO.java        # record de salida del endpoint de Deezer
+        ├── repositorio/
+        │   ├── ArtistaRepository.java
+        │   └── CancionRepository.java
+        ├── externo/
+        │   ├── DeezerCliente.java           # RestClient
+        │   └── DeezerRespuesta.java         # records para el JSON de Deezer
+        ├── excepcion/
+        │   ├── ServicioExternoException.java
+        │   └── ManejadorErrores.java        # @RestControllerAdvice (502)
+        ├── servicio/CatalogoMusical.java
+        └── controlador/
+            ├── InicioController.java
+            ├── CancionController.java
+            └── ArtistaController.java
 ```
+
+## Modelo de datos
+
+- **Artista**: `id`, `nombre` (único y obligatorio).
+- **Cancion**: `id`, `titulo`, `genero`, `anio`, `duracionSegundos` y `@ManyToOne` hacia **Artista** (muchas canciones, un artista).
+
+El JSON **de entrada** del POST/PUT se mantiene igual que en la U1 (el artista se envía como texto y el servicio lo resuelve o lo crea). En las **respuestas**, el artista aparece como objeto anidado.
 
 ## Cómo ejecutar
 
-Requisitos: JDK 17 o superior y Maven instalados.
+Requisitos: JDK 17 o superior y Maven.
+
+### Con H2 (por defecto)
 
 ```bash
 mvn spring-boot:run
 ```
 
-La aplicación queda escuchando en `http://localhost:8080`. La base de datos se guarda en el archivo `./data/cancionesdb.mv.db` (se crea automáticamente en la primera ejecución).
+Consola de H2 en `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:mem:musicadb`, usuario `sa`, sin contraseña).
 
-Para compilar y ejecutar las pruebas:
+### Con MySQL
+
+Con MySQL escuchando en `localhost:3306`. Por defecto usa el usuario `root` sin contraseña; para cambiarlo, define las variables de entorno `DB_USER` y `DB_PASSWORD`:
 
 ```bash
-mvn test
+mvn spring-boot:run -Dspring-boot.run.profiles=mysql
 ```
 
-### Consola de H2 (opcional)
+La base `musica_db` se crea automáticamente si no existe.
 
-Para inspeccionar la base de datos directamente, abre `http://localhost:8080/h2-console` y usa:
+### Pruebas
 
-- **JDBC URL:** `jdbc:h2:file:./data/cancionesdb`
-- **User:** `sa`
-- **Password:** *(vacío)*
+```bash
+mvn clean test
+```
 
 ## Endpoints
 
-| Método | URL                          | Descripción                                          | Respuestas |
-|--------|------------------------------|------------------------------------------------------|------------|
-| GET    | `/api/canciones`             | Lista todas las canciones                            | 200 OK |
-| GET    | `/api/canciones/{id}`        | Canción por id (PathVariable)                        | 200 OK / 404 NOT FOUND |
-| GET    | `/api/canciones/generos`     | Géneros disponibles sin repetir                      | 200 OK |
-| GET    | `/api/canciones/buscar?genero=rock` | Consulta personalizada por género (RequestParam) | 200 OK / 400 BAD REQUEST |
-| POST   | `/api/canciones`             | Crea una canción (JSON en el cuerpo)                 | 201 CREATED / 400 BAD REQUEST |
-| PUT    | `/api/canciones/{id}`        | Actualiza una canción existente                      | 200 OK / 400 BAD REQUEST / 404 NOT FOUND |
-| DELETE | `/api/canciones/{id}`        | Elimina una canción por id                           | 204 NO CONTENT / 404 NOT FOUND |
+| Método | Ruta | Descripción | Respuestas |
+|--------|------|-------------|------------|
+| GET | `/` | Índice con la lista de endpoints | 200 |
+| GET | `/api/canciones` | Lista todas las canciones | 200 |
+| GET | `/api/canciones/generos` | Géneros disponibles sin repetir | 200 |
+| GET | `/api/canciones/{id}` | Canción por id | 200 / 404 |
+| GET | `/api/canciones/buscar?genero=` | Filtra por género | 200 / 400 |
+| POST | `/api/canciones` | Crea una canción | 201 + Location / 400 |
+| PUT | `/api/canciones/{id}` | Actualiza una canción | 200 / 400 / 404 |
+| DELETE | `/api/canciones/{id}` | Elimina una canción | 204 / 404 |
+| GET | `/api/canciones/{id}/deezer` | Busca la canción en Deezer | 200 / 404 / 502 |
+| GET | `/api/artistas` | Lista los artistas | 200 |
+| GET | `/api/artistas/{id}/canciones` | Canciones de un artista | 200 / 404 |
 
-## Ejemplos de solicitud y respuesta
+## Ejemplos
 
-Crear una canción:
+Crear una canción (el mismo JSON de la U1):
 
 ```bash
 curl -X POST http://localhost:8080/api/canciones \
@@ -100,59 +114,50 @@ curl -X POST http://localhost:8080/api/canciones \
   -d '{"titulo":"Mi Canción","artista":"Yo","genero":"Pop","anio":2026,"duracionSegundos":200}'
 ```
 
-Respuesta (`201 Created`):
+Respuesta (`201 Created`), nótese el artista anidado:
 
 ```json
 {
   "id": 9,
   "titulo": "Mi Canción",
-  "artista": "Yo",
   "genero": "Pop",
   "anio": 2026,
-  "duracionSegundos": 200
+  "duracionSegundos": 200,
+  "artista": { "id": 9, "nombre": "Yo" }
 }
 ```
 
-Consultar la canción creada (`200 OK`):
+Buscar en Deezer:
 
 ```bash
-curl http://localhost:8080/api/canciones/9
+curl http://localhost:8080/api/canciones/1/deezer
 ```
 
-Consulta personalizada por género (`200 OK`):
+Respuesta (`200 OK`):
 
-```bash
-curl "http://localhost:8080/api/canciones/buscar?genero=Rock%20en%20español"
-```
-
-Actualizar (`200 OK`) y eliminar (`204 No Content`):
-
-```bash
-curl -X PUT http://localhost:8080/api/canciones/9 \
-  -H "Content-Type: application/json" \
-  -d '{"titulo":"Mi Canción (editada)","artista":"Yo","genero":"Pop","anio":2026,"duracionSegundos":210}'
-
-curl -X DELETE http://localhost:8080/api/canciones/9
+```json
+{
+  "titulo": "La Camisa Negra",
+  "artista": "Juanes",
+  "album": "Mi Sangre",
+  "portada": "https://cdns-images.dzcdn.net/images/...",
+  "preview": "https://cdns-preview-...",
+  "link": "https://www.deezer.com/track/..."
+}
 ```
 
 ## Probar con Bruno
 
-El repositorio incluye una colección lista para [Bruno](https://www.usebruno.com/) en la carpeta `bruno/`.
+El proyecto incluye una colección en `bruno/`:
 
-1. Abrir Bruno → **Open Collection** → seleccionar la carpeta `bruno/` del proyecto.
-2. Con la aplicación corriendo (`mvn spring-boot:run`), ejecutar las peticiones en orden con el botón ▶.
-3. La petición **4 (Crear cancion)** guarda el id de la canción creada en la variable `nuevoId`; las peticiones 5, 6 y 7 usan ese id para consultar, actualizar y eliminar. Para agregar otra canción, edita el JSON de la petición 4 y vuelve a ejecutarla (cada ejecución crea una canción nueva con su propio id).
+1. Abrir Bruno → **Open Collection** → seleccionar la carpeta `bruno/`.
+2. Con la app corriendo, ejecutar las peticiones en orden.
+3. Las peticiones `9. Listar artistas` y `10. Buscar en Deezer` prueban los endpoints nuevos (la 10 usa la canción con id 1 = *La Camisa Negra*, que requiere conexión a internet).
 
-## Decisiones de diseño
+## Manejo de errores
 
-- **Entidad `Cancion` con JPA**: la clase está anotada con `@Entity` y `@Table`, con `@Id` + `@GeneratedValue(IDENTITY)` para que el id lo genere la base de datos. Hibernate crea y actualiza la tabla automáticamente (`ddl-auto=update`).
-- **Repositorio `CancionRepository`**: extiende `JpaRepository<Cancion, Long>`, por lo que el CRUD básico (`save`, `findAll`, `findById`, `deleteById`, ...) viene implementado por Spring Data sin escribir SQL.
-- **Consulta personalizada con JPQL**: `buscarPorGenero` filtra por género sin distinguir mayúsculas/minúsculas y con coincidencia parcial (`LIKE`); `listarGeneros` devuelve los géneros distintos y ordenados.
-- **Servicio separado del controlador**: el controlador solo traduce HTTP a llamadas al servicio; la lógica de negocio y la validación viven en `CatalogoMusical`.
-- **DTO de entrada con `record`**: el cliente nunca envía el `id`; ese lo asigna la base de datos al persistir.
-- **`ResponseEntity` en todos los métodos**: permite elegir el código HTTP correcto para cada situación (200, 201, 204, 400, 404).
-- **H2 en archivo (no en memoria)**: los datos sobreviven al reinicio de la aplicación, lo que evidencia que la persistencia es real y no un simple arreglo en RAM.
+Si la API de Deezer falla o no responde, `ManejadorErrores` (`@RestControllerAdvice`) devuelve `502 Bad Gateway` con `{"error": "..."}`. Si la canción no existe en la base o Deezer no la encuentra, el endpoint responde `404` con un mensaje distinto para cada caso.
 
 ## Uso de inteligencia artificial
 
-Se utilizó inteligencia artificial generativa (Hermes / modelos de lenguaje) como apoyo para estructurar el proyecto, revisar la configuración de JPA/Hibernate y redactar parte de la documentación. El código final fue revisado, adaptado y verificado por el estudiante ejecutando la aplicación y probando cada endpoint con `curl`.
+Se utilizó inteligencia artificial generativa (Hermes / modelos de lenguaje) como apoyo para estructurar el proyecto, revisar la configuración de JPA/Hibernate y de los perfiles H2/MySQL, y adaptar el consumo de Deezer con `RestClient`. El código final fue revisado, adaptado y verificado por el estudiante ejecutando `mvn clean test` y probando cada endpoint (incluido el de Deezer) con sus códigos HTTP reales.

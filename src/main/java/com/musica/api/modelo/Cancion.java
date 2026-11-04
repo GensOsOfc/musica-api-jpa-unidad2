@@ -5,12 +5,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-/**
- * Entidad JPA mapeada a la tabla "canciones". El id lo genera la base de datos
- * de forma autoincremental (IDENTITY).
- */
 @Entity
 @Table(name = "canciones")
 public class Cancion {
@@ -22,9 +20,6 @@ public class Cancion {
     @Column(nullable = false, length = 120)
     private String titulo;
 
-    @Column(nullable = false, length = 120)
-    private String artista;
-
     @Column(nullable = false, length = 80)
     private String genero;
 
@@ -34,12 +29,15 @@ public class Cancion {
     @Column(nullable = false)
     private int duracionSegundos;
 
-    // Obligatorio para JPA/Hibernate (lo usa al leer una fila de la base).
-    public Cancion() {
+    // Muchas canciones pertenecen a un artista.
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "artista_id")
+    private Artista artista;
+
+    protected Cancion() {
     }
 
-    public Cancion(String titulo, String artista, String genero,
-                   int anio, int duracionSegundos) {
+    public Cancion(String titulo, Artista artista, String genero, int anio, int duracionSegundos) {
         this.titulo = titulo;
         this.artista = artista;
         this.genero = genero;
@@ -51,24 +49,12 @@ public class Cancion {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public String getTitulo() {
         return titulo;
     }
 
     public void setTitulo(String titulo) {
         this.titulo = titulo;
-    }
-
-    public String getArtista() {
-        return artista;
-    }
-
-    public void setArtista(String artista) {
-        this.artista = artista;
     }
 
     public String getGenero() {
@@ -93,5 +79,13 @@ public class Cancion {
 
     public void setDuracionSegundos(int duracionSegundos) {
         this.duracionSegundos = duracionSegundos;
+    }
+
+    public Artista getArtista() {
+        return artista;
+    }
+
+    public void setArtista(Artista artista) {
+        this.artista = artista;
     }
 }

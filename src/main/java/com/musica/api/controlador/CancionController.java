@@ -17,14 +17,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.musica.api.dto.CancionDeezerDTO;
 import com.musica.api.dto.CancionDTO;
+import com.musica.api.externo.DeezerRespuesta;
 import com.musica.api.modelo.Cancion;
 import com.musica.api.servicio.CatalogoMusical;
 
-/**
- * Endpoints REST de /api/canciones. Cada método devuelve ResponseEntity
- * para controlar el código HTTP (200/201/204/400/404).
- */
 @RestController
 @RequestMapping("/api/canciones")
 public class CancionController {
@@ -64,13 +62,37 @@ public class CancionController {
                 .body(Map.of("error", "No existe una canción con id " + id));
     }
 
+    @GetMapping("/{id}/deezer")
+    public ResponseEntity<?> buscarEnDeezer(@PathVariable Long id) {
+        Optional<Cancion> cancion = catalogo.buscarPorId(id);
+        if (cancion.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "No existe una canción con id " + id + " en la base de datos"));
+        }
+        Optional<DeezerRespuesta.DeezerTrack> track = catalogo.buscarEnDeezer(id);
+        if (track.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Deezer no encontró la canción '" + cancion.get().getTitulo() + "'"));
+        }
+        DeezerRespuesta.DeezerTrack t = track.get();
+        CancionDeezerDTO dto = new CancionDeezerDTO(
+                cancion.get().getTitulo(),
+                cancion.get().getArtista().getNombre(),
+                t.album() != null ? t.album().title() : null,
+                t.album() != null ? t.album().coverMedium() : null,
+                t.preview(),
+                t.link()
+        );
+        return ResponseEntity.ok(dto);
+    }
+
     @PostMapping
     public ResponseEntity<?> crear(@RequestBody CancionDTO dto) {
         String error = catalogo.validar(dto);
         if (error != null) {
             return ResponseEntity.badRequest().body(Map.of("error", error));
         }
-        Cancion creada = catalogo.crear(dto);
+        Cancion creada = catalogo.agregar(dto);
         URI location = URI.create("/api/canciones/" + creada.getId());
         return ResponseEntity.created(location).body(creada);
     }
